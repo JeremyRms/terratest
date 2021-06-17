@@ -50,10 +50,21 @@ func FormatArgs(options *Options, args ...string) []string {
 	lockSupported := collections.ListContains(TerraformCommandsWithLockSupport, commandType)
 	planFileSupported := collections.ListContains(TerraformCommandsWithPlanFileSupport, commandType)
 
+	// Include -var and -var-file flags unless we're running 'apply' with a plan file
+	includeVars := !(commandType == "apply" && len(options.PlanFilePath) > 0)
+
 	terraformArgs = append(terraformArgs, args...)
-	terraformArgs = append(terraformArgs, FormatTerraformVarsAsArgs(options.Vars)...)
-	terraformArgs = append(terraformArgs, FormatTerraformArgs("-var-file", options.VarFiles)...)
+
+	if includeVars {
+		terraformArgs = append(terraformArgs, FormatTerraformVarsAsArgs(options.Vars)...)
+		terraformArgs = append(terraformArgs, FormatTerraformArgs("-var-file", options.VarFiles)...)
+	}
+
 	terraformArgs = append(terraformArgs, FormatTerraformArgs("-target", options.Targets)...)
+
+	if options.NoColor {
+		terraformArgs = append(terraformArgs, "-no-color")
+	}
 
 	if lockSupported {
 		// If command supports locking, handle lock arguments
